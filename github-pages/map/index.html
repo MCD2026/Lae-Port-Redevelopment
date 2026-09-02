@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lae Port Redevelopment PhotoMap | 2D</title>
+  <link rel="stylesheet" href="vendor/leaflet.css">
+  <style>
+    html, body, #map { width:100%; height:100%; margin:0; }
+    body { font-family:Arial, Helvetica, sans-serif; }
+    .leaflet-popup-content-wrapper { border-radius:8px; padding:0; overflow:hidden; }
+    .leaflet-popup-content { margin:0; width:min(460px,78vw) !important; }
+    .photo { display:block; width:100%; max-height:56vh; object-fit:contain; background:#18201d; }
+    .caption { padding:10px 12px 12px; color:#273138; }
+    .caption strong { display:block; margin-bottom:3px; font-size:.94rem; }
+    .caption span { color:#64727a; font-size:.8rem; }
+    .caption a { float:right; color:#0b6b3a; font-weight:700; text-decoration:none; }
+    .photo-marker { width:16px; height:16px; border:2px solid #fff; border-radius:50%; background:#0b6b3a; box-shadow:0 1px 5px rgba(0,0,0,.55); }
+    .site-pill { display:inline-block; margin-top:6px; padding:3px 7px; border-radius:999px; color:#fff; font-size:.7rem; font-weight:700; }
+    .fit-control { background:#fff; border:2px solid rgba(0,0,0,.2); border-radius:4px; color:#273138; cursor:pointer; font-weight:700; padding:7px 9px; }
+    .fit-control:hover { background:#f4f7f5; }
+    .leaflet-control-layers { font-size:.86rem; }
+    .map-legend { padding:8px 10px; border:2px solid rgba(0,0,0,.16); border-radius:6px; background:rgba(255,255,255,.96); color:#273138; box-shadow:0 1px 5px rgba(0,0,0,.18); }
+    .legend-title { display:block; margin-bottom:6px; font-size:.76rem; }
+    .legend-grid { display:grid; grid-template-columns:repeat(2,minmax(105px,1fr)); gap:4px 10px; }
+    .legend-item { display:flex; align-items:center; gap:6px; white-space:nowrap; font-size:.7rem; }
+    .legend-dot { width:10px; height:10px; flex:none; border:1px solid #fff; border-radius:50%; box-shadow:0 0 0 1px rgba(0,0,0,.22); }
+    .north-control { width:48px; height:58px; display:grid; place-items:center; border:2px solid rgba(0,0,0,.18); border-radius:8px; background:rgba(255,255,255,.96); color:#1f2d28; box-shadow:0 1px 5px rgba(0,0,0,.2); text-align:center; pointer-events:none; }
+    .north-control strong { display:block; margin-bottom:-5px; font:800 .86rem/1 Arial,Helvetica,sans-serif; }
+    .north-arrow { display:block; color:#0b6b3a; font-size:1.65rem; line-height:1; }
+    @media (max-width:600px) {
+      .map-legend { max-height:120px; padding:7px 8px; overflow:auto; }
+      .legend-grid { grid-template-columns:1fr; gap:3px; }
+      .north-control { width:42px; height:52px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="map" role="application" aria-label="Lae Port Redevelopment PhotoMap"></div>
+  <script src="vendor/leaflet.js"></script>
+  <script src="data/Lae_Port_Photos.js"></script>
+  <script>
+    const map = L.map('map', { zoomControl:true, minZoom:3, maxZoom:22 });
+    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution:'Tiles &copy; Esri', maxNativeZoom:17, maxZoom:22, keepBuffer:4
+    }).addTo(map);
+    const streets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:'&copy; OpenStreetMap contributors', maxNativeZoom:19, maxZoom:22, keepBuffer:4
+    });
+    const siteColours = {
+      'HBS Camp Accommodation':'#0b6b3a',
+      'HBS Services':'#096f8c',
+      'Lae Port Existing Wharf':'#bd5b22',
+      'Lae Port Landside':'#77549b',
+      'Pacific Marine Group – Kimbe Port':'#2d68a5',
+      'Ready Mixed Concrete PNG':'#b1375c',
+      'Trans Pacific Piling':'#7a6b15',
+      'New Photos':'#555f5b'
+    };
+    const siteLayers = {};
+    const allMarkers = [];
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]));
+    }
+
+    function friendlyName(value) {
+      return String(value || 'Site photo').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    function formatDate(value) {
+      if (!value) return '';
+      return new Intl.DateTimeFormat('en-NZ', { dateStyle:'medium', timeStyle:'short', timeZone:'Pacific/Guadalcanal' }).format(new Date(value));
+    }
+
+    json_Lae_Port_Photos.features.forEach((feature) => {
+      const [lng, lat] = feature.geometry.coordinates;
+      const p = feature.properties;
+      const site = p.site || 'Site photos';
+      const colour = siteColours[site] || '#0b6b3a';
+      const icon = L.divIcon({ className:'', html:`<div class="photo-marker" style="background:${colour}"></div>`, iconSize:[16,16], iconAnchor:[8,8] });
+      const safePhoto = encodeURI(p.photo);
+      const popup = `<a href="${safePhoto}" target="_blank" rel="noopener"><img class="photo" src="${safePhoto}" alt="${escapeHtml(friendlyName(p.filename))}" loading="lazy"></a>` +
+        `<div class="caption"><a href="${safePhoto}" target="_blank" rel="noopener">Full size ↗</a><strong>${escapeHtml(friendlyName(p.filename))}</strong><span>${formatDate(p.timestamp)}${p.author ? ` · ${escapeHtml(p.author)}` : ''}</span><br><span class="site-pill" style="background:${colour}">${escapeHtml(site)}</span></div>`;
+      const marker = L.marker([lat, lng], { icon }).bindPopup(popup, { maxWidth:500, minWidth:240 });
+      if (!siteLayers[site]) siteLayers[site] = L.layerGroup().addTo(map);
+      marker.addTo(siteLayers[site]);
+      allMarkers.push(marker);
+    });
+    L.control.layers({ 'Satellite':satellite, 'Street map':streets }, siteLayers, { position:'topright', collapsed:true }).addTo(map);
+
+    const NorthControl = L.Control.extend({
+      options:{ position:'topright' },
+      onAdd() {
+        const container = L.DomUtil.create('div', 'north-control');
+        container.setAttribute('aria-label', 'North is at the top of the map');
+        container.innerHTML = '<div><strong>N</strong><span class="north-arrow">▲</span></div>';
+        return container;
+      }
+    });
+    map.addControl(new NorthControl());
+
+    const LegendControl = L.Control.extend({
+      options:{ position:'bottomright' },
+      onAdd() {
+        const container = L.DomUtil.create('div', 'map-legend');
+        container.setAttribute('aria-label', 'Photo location colour legend');
+        const items = Object.keys(siteColours)
+          .filter(site => siteLayers[site])
+          .map(site => `<span class="legend-item"><i class="legend-dot" style="background:${siteColours[site]}"></i>${escapeHtml(site)}</span>`)
+          .join('');
+        container.innerHTML = `<strong class="legend-title">Photo locations</strong><div class="legend-grid">${items}</div>`;
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.disableScrollPropagation(container);
+        return container;
+      }
+    });
+    map.addControl(new LegendControl());
+
+    function fitPhotos() {
+      if (allMarkers.length) map.fitBounds(L.featureGroup(allMarkers).getBounds().pad(0.08), { maxZoom:17 });
+    }
+    fitPhotos();
+
+    const FitControl = L.Control.extend({
+      options:{ position:'topleft' },
+      onAdd() {
+        const button = L.DomUtil.create('button', 'fit-control');
+        button.type = 'button';
+        button.title = 'Show all photos';
+        button.textContent = 'Fit all';
+        L.DomEvent.disableClickPropagation(button);
+        L.DomEvent.on(button, 'click', fitPhotos);
+        return button;
+      }
+    });
+    map.addControl(new FitControl());
+  </script>
+</body>
+</html>

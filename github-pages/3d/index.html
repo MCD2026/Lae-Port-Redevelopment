@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="3D tour for the Lae Port Redevelopment PhotoMap.">
+  <title>Lae Port Redevelopment PhotoMap | 3D</title>
+  <link rel="preconnect" href="https://cesium.com" crossorigin>
+  <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
+  <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.134/Build/Cesium/Widgets/widgets.css">
+  <style>
+    :root { --green:#0b6b3a; --lime:#bed731; --ink:#1d2926; --paper:rgba(255,255,255,.96); }
+    * { box-sizing:border-box; }
+    html, body, #cesiumContainer { width:100%; height:100%; margin:0; overflow:hidden; }
+    body { background:#14251f; font-family:Arial,Helvetica,sans-serif; }
+    #cesiumContainer { position:fixed; inset:0; }
+    .topbar { position:fixed; top:14px; left:14px; right:60px; z-index:10; display:flex; align-items:center; gap:12px; max-width:850px; padding:10px 12px; color:var(--ink); background:var(--paper); border-left:5px solid var(--lime); border-radius:8px; box-shadow:0 5px 20px rgba(0,0,0,.28); }
+    .logo { width:132px; height:auto; display:block; }
+    .title { min-width:150px; flex:1; }
+    h1 { margin:0 0 2px; font-size:1rem; line-height:1.15; }
+    .subtitle { color:#66736e; font-size:.76rem; }
+    .controls { display:flex; align-items:center; gap:7px; }
+    button { border:0; border-radius:5px; cursor:pointer; font-weight:700; padding:8px 10px; }
+    .primary { background:var(--green); color:#fff; }
+    .primary:hover { background:#07572f; }
+    .secondary { background:#e9eeeb; color:#26332f; }
+    .secondary:hover { background:#dce4df; }
+    .map-link { border-radius:5px; padding:8px 10px; background:#e9eeeb; color:#26332f; font-size:.82rem; font-weight:700; text-decoration:none; }
+    .map-link:hover { background:#dce4df; }
+    .status { position:fixed; left:18px; bottom:28px; z-index:10; padding:7px 10px; border-radius:999px; background:rgba(20,34,29,.88); color:#fff; font-size:.75rem; box-shadow:0 2px 10px rgba(0,0,0,.22); }
+    .status::before { content:""; display:inline-block; width:8px; height:8px; margin-right:7px; border-radius:50%; background:#f6b93b; }
+    .status.ready::before { background:var(--lime); }
+    .status.error::before { background:#f05a55; }
+    .photo-panel { position:fixed; top:92px; right:14px; z-index:11; width:min(360px,calc(100vw - 28px)); max-height:calc(100vh - 120px); overflow:auto; background:var(--paper); border-radius:9px; box-shadow:0 8px 28px rgba(0,0,0,.32); transform:translateX(calc(100% + 28px)); transition:transform .25s ease; }
+    .photo-panel.open { transform:translateX(0); }
+    .photo-panel img { display:block; width:100%; max-height:52vh; object-fit:contain; background:#17201d; border-radius:9px 9px 0 0; }
+    .photo-copy { padding:12px 14px 15px; }
+    .photo-copy strong { display:block; margin-bottom:4px; font-size:1rem; }
+    .photo-copy span { color:#64716c; font-size:.82rem; }
+    .close { position:absolute; top:8px; right:8px; width:32px; height:32px; padding:0; color:#fff; background:rgba(0,0,0,.65); border-radius:50%; font-size:1.15rem; }
+    .hint { position:fixed; left:50%; bottom:26px; z-index:9; transform:translateX(-50%); padding:7px 11px; border-radius:5px; background:rgba(20,34,29,.76); color:#fff; font-size:.75rem; pointer-events:none; }
+    .north-compass { position:fixed; top:58px; right:11px; z-index:10; width:48px; height:48px; display:grid; place-items:center; border:2px solid rgba(0,0,0,.2); border-radius:50%; background:rgba(255,255,255,.94); color:#1f2d28; box-shadow:0 2px 8px rgba(0,0,0,.25); pointer-events:none; }
+    .compass-needle { display:grid; place-items:center; transform-origin:50% 50%; }
+    .compass-needle strong { margin-bottom:-4px; font-size:.72rem; line-height:1; }
+    .compass-needle span { color:var(--green); font-size:1.35rem; line-height:.9; }
+    .cesium-viewer-bottom { bottom:4px; }
+    @media (max-width:720px) {
+      .topbar { top:8px; left:8px; right:46px; gap:8px; padding:8px; }
+      .logo { width:92px; }
+      .subtitle { display:none; }
+      .controls { gap:4px; }
+      button { padding:7px 8px; font-size:.75rem; }
+      .photo-panel { top:74px; right:8px; }
+      .hint { display:none; }
+      .status { left:10px; bottom:20px; }
+      .north-compass { top:52px; right:7px; width:42px; height:42px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer" aria-label="Lae Port Redevelopment PhotoMap 3D tour"></div>
+  <header class="topbar">
+    <img class="logo" src="../mcd-logo.png" alt="McConnell Dowell">
+    <div class="title">
+      <h1>Lae Port Redevelopment PhotoMap</h1>
+      <div class="subtitle">352 photos · Location-guided tour</div>
+    </div>
+    <div class="controls">
+      <a class="map-link" href="../?view=2d" target="_top">2D map ↗</a>
+      <button id="tourButton" class="primary" type="button">▶ Play tour</button>
+      <button id="homeButton" class="secondary" type="button">Reset view</button>
+    </div>
+  </header>
+  <div class="north-compass" aria-label="North direction"><div id="compassNeedle" class="compass-needle"><strong>N</strong><span>▲</span></div></div>
+  <div id="status" class="status">Loading 3D terrain…</div>
+  <div class="hint">Drag to orbit · Scroll to zoom · Select a green marker</div>
+  <aside id="photoPanel" class="photo-panel" aria-live="polite">
+    <button id="closePanel" class="close" type="button" aria-label="Close photo">×</button>
+    <img id="panelImage" alt="Selected site photo">
+    <div class="photo-copy"><strong id="panelTitle"></strong><span id="panelDate"></span></div>
+  </aside>
+
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.134/Build/Cesium/Cesium.js"></script>
+  <script src="../data/Lae_Port_Photos.js"></script>
+  <script>
+    const statusElement = document.getElementById('status');
+    const panel = document.getElementById('photoPanel');
+    const panelImage = document.getElementById('panelImage');
+    const panelTitle = document.getElementById('panelTitle');
+    const panelDate = document.getElementById('panelDate');
+    const tourButton = document.getElementById('tourButton');
+    const compassNeedle = document.getElementById('compassNeedle');
+    let tourCancelled = false;
+
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      animation:false,
+      baseLayerPicker:false,
+      geocoder:false,
+      homeButton:false,
+      infoBox:false,
+      sceneModePicker:false,
+      selectionIndicator:false,
+      timeline:false,
+      navigationHelpButton:true,
+      navigationInstructionsInitiallyVisible:false,
+      fullscreenButton:true,
+      baseLayer:false,
+      terrainProvider:new Cesium.EllipsoidTerrainProvider()
+    });
+
+    viewer.scene.globe.depthTestAgainstTerrain = true;
+    viewer.scene.globe.enableLighting = true;
+    viewer.scene.skyAtmosphere.show = true;
+    viewer.scene.screenSpaceCameraController.maximumZoomDistance = 25000000;
+    viewer.scene.screenSpaceCameraController.minimumZoomDistance = 35;
+    viewer.scene.postRender.addEventListener(() => {
+      compassNeedle.style.transform = `rotate(${-viewer.camera.heading}rad)`;
+    });
+
+    const imageryProvider = new Cesium.UrlTemplateImageryProvider({
+      url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      credit:'Tiles © Esri',
+      minimumLevel:0,
+      maximumLevel:17
+    });
+    viewer.imageryLayers.addImageryProvider(imageryProvider);
+    let imageryFailures = 0;
+    let streetFallbackActive = false;
+    imageryProvider.errorEvent.addEventListener(() => {
+      imageryFailures += 1;
+      if (imageryFailures < 3 || streetFallbackActive) return;
+      streetFallbackActive = true;
+      viewer.imageryLayers.removeAll();
+      viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
+        url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        credit:'© OpenStreetMap contributors',
+        maximumLevel:19
+      }));
+      statusElement.textContent = '3D terrain ready · street-map fallback';
+    });
+
+    function showPhoto(entity) {
+      const now = Cesium.JulianDate.now();
+      panelImage.src = entity.properties.photo.getValue(now);
+      panelTitle.textContent = entity.properties.filename.getValue(now).replace(/[_-]+/g, ' ');
+      const routeIndex = orderedEntities.indexOf(entity) + 1;
+      const direction = entity.properties.direction?.getValue(now);
+      const site = entity.properties.site.getValue(now);
+      const viewDirection = Number.isFinite(direction) ? ` · View ${Math.round(direction)}°` : '';
+      panelDate.textContent = `${site} · Location ${routeIndex} of ${orderedEntities.length}${viewDirection}`;
+      panel.classList.add('open');
+    }
+
+    const entities = [];
+    const photoRecords = [];
+    json_Lae_Port_Photos.features.forEach((feature, index) => {
+      const [lng, lat] = feature.geometry.coordinates;
+      const properties = feature.properties;
+      const position = Cesium.Cartesian3.fromDegrees(lng, lat, 0);
+      const entity = viewer.entities.add({
+        id:`photo-${index + 1}`,
+        position,
+        properties:{
+          photo:`../map/${properties.photo}`,
+          filename:properties.filename,
+          timestamp:properties.timestamp,
+          longitude:lng,
+          latitude:lat,
+          direction:properties.direction,
+          altitude:properties.altitude,
+          site:properties.site || 'Site photos'
+        },
+        point:{
+          pixelSize:11,
+          color:Cesium.Color.fromCssColorString('#0b6b3a'),
+          outlineColor:Cesium.Color.WHITE,
+          outlineWidth:2,
+          heightReference:Cesium.HeightReference.CLAMP_TO_GROUND,
+          disableDepthTestDistance:3000
+        }
+      });
+      entities.push(entity);
+      photoRecords.push({entity, lng, lat, position});
+    });
+
+    function distanceSquared(a, b) {
+      const latitudeScale = Math.cos(Cesium.Math.toRadians((a.lat + b.lat) / 2));
+      const x = (a.lng - b.lng) * latitudeScale;
+      const y = a.lat - b.lat;
+      return (x * x) + (y * y);
+    }
+
+    function orderByLocation(records) {
+      const remaining = records.slice();
+      const startIndex = remaining.reduce((best, record, index) =>
+        record.lat > remaining[best].lat ? index : best, 0);
+      const ordered = [remaining.splice(startIndex, 1)[0]];
+      while (remaining.length) {
+        const current = ordered[ordered.length - 1];
+        let nearestIndex = 0;
+        let nearestDistance = distanceSquared(current, remaining[0]);
+        for (let index = 1; index < remaining.length; index++) {
+          const candidateDistance = distanceSquared(current, remaining[index]);
+          if (candidateDistance < nearestDistance) {
+            nearestDistance = candidateDistance;
+            nearestIndex = index;
+          }
+        }
+        ordered.push(remaining.splice(nearestIndex, 1)[0]);
+      }
+      return ordered;
+    }
+
+    const orderedRecords = orderByLocation(photoRecords);
+    const orderedEntities = orderedRecords.map(record => record.entity);
+    const routePositions = orderedRecords.map(record => record.position);
+
+    const routeSegments = [[]];
+    orderedRecords.forEach((record, index) => {
+      if (index > 0 && Math.sqrt(distanceSquared(orderedRecords[index - 1], record)) > 0.006) {
+        routeSegments.push([]);
+      }
+      routeSegments[routeSegments.length - 1].push(record.position);
+    });
+    routeSegments.filter(segment => segment.length > 1).forEach((positions, index) => {
+      viewer.entities.add({
+        id:`inspection-route-${index + 1}`,
+        polyline:{
+          positions,
+          width:3,
+          material:Cesium.Color.fromCssColorString('#bed731').withAlpha(.9),
+          clampToGround:true
+        }
+      });
+    });
+
+    const siteBounds = Cesium.BoundingSphere.fromPoints(routePositions);
+
+    function resetView(duration = 1.6) {
+      viewer.camera.flyToBoundingSphere(siteBounds, {
+        duration,
+        offset:new Cesium.HeadingPitchRange(
+          Cesium.Math.toRadians(205),
+          Cesium.Math.toRadians(-42),
+          Math.max(siteBounds.radius * 2.6, 8800)
+        )
+      });
+    }
+
+    resetView(0);
+
+    async function flyToPhotoView(entity, duration = 1.8) {
+      const now = Cesium.JulianDate.now();
+      const longitude = entity.properties.longitude.getValue(now);
+      const latitude = entity.properties.latitude.getValue(now);
+      const directionValue = entity.properties.direction?.getValue(now);
+      const altitudeValue = entity.properties.altitude?.getValue(now);
+      const direction = Number.isFinite(directionValue) ? directionValue : 25;
+      const cartographic = Cesium.Cartographic.fromDegrees(longitude, latitude);
+      const fallbackHeight = Number.isFinite(altitudeValue) ? altitudeValue : 0;
+      const origin = Cesium.Cartesian3.fromDegrees(longitude, latitude, fallbackHeight);
+      const localFrame = Cesium.Transforms.eastNorthUpToFixedFrame(origin);
+      const heading = Cesium.Math.toRadians(direction);
+      const cameraCandidates = [120, 80, 40, 0].map(distance => {
+        const offset = new Cesium.Cartesian3(
+          -Math.sin(heading) * distance,
+          -Math.cos(heading) * distance,
+          0
+        );
+        const groundPoint = Cesium.Matrix4.multiplyByPoint(localFrame, offset, new Cesium.Cartesian3());
+        return {distance, cartographic:Cesium.Cartographic.fromCartesian(groundPoint)};
+      });
+      try {
+        await Cesium.sampleTerrain(terrainProvider, 15, [cartographic, ...cameraCandidates.map(candidate => candidate.cartographic)]);
+      } catch (error) {
+        console.warn('Terrain sample unavailable; using photo altitude fallback.', error);
+      }
+      const groundHeight = Number.isFinite(cartographic.height) ? cartographic.height : fallbackHeight;
+      const cameraCandidate = cameraCandidates.find(candidate => {
+        const candidateHeight = Number.isFinite(candidate.cartographic.height) ? candidate.cartographic.height : groundHeight;
+        return candidateHeight <= groundHeight + 25;
+      }) || cameraCandidates[cameraCandidates.length - 1];
+      const cameraCartographic = cameraCandidate.cartographic;
+      const approachDistance = cameraCandidate.distance;
+      const cameraHeight = groundHeight + 60;
+      const destination = Cesium.Cartesian3.fromRadians(
+        cameraCartographic.longitude,
+        cameraCartographic.latitude,
+        cameraHeight
+      );
+      const pitch = Cesium.Math.clamp(
+        Math.atan2((groundHeight + 6) - cameraHeight, approachDistance),
+        Cesium.Math.toRadians(-28),
+        Cesium.Math.toRadians(-18)
+      );
+      return await new Promise(resolve => {
+        viewer.camera.flyTo({
+          destination,
+          orientation:{ heading, pitch, roll:0 },
+          duration,
+          easingFunction:Cesium.EasingFunction.QUADRATIC_IN_OUT,
+          complete:() => resolve(true),
+          cancel:() => resolve(false)
+        });
+      });
+    }
+
+    const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+    handler.setInputAction((movement) => {
+      const picked = viewer.scene.pick(movement.position);
+      if (Cesium.defined(picked) && entities.includes(picked.id)) {
+        showPhoto(picked.id);
+        flyToPhotoView(picked.id, 1.2);
+      }
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+    async function startTour() {
+      if (tourButton.dataset.running === 'true') {
+        tourCancelled = true;
+        viewer.camera.cancelFlight();
+        return;
+      }
+      tourCancelled = false;
+      tourButton.dataset.running = 'true';
+      tourButton.textContent = '■ Stop tour';
+      const stopCount = Math.min(12, orderedEntities.length);
+      const stops = Array.from({length:stopCount}, (_, stopIndex) => {
+        const recordIndex = Math.round((orderedEntities.length - 1) * stopIndex / Math.max(1, stopCount - 1));
+        return orderedEntities[recordIndex];
+      });
+      for (const entity of stops) {
+        if (tourCancelled) break;
+        await flyToPhotoView(entity, 2.2);
+        if (tourCancelled) break;
+        showPhoto(entity);
+        await new Promise(resolve => setTimeout(resolve, 2100));
+      }
+      tourButton.dataset.running = 'false';
+      tourButton.textContent = '▶ Play tour';
+    }
+
+    tourButton.addEventListener('click', startTour);
+    document.getElementById('homeButton').addEventListener('click', () => {
+      tourCancelled = true;
+      panel.classList.remove('open');
+      resetView();
+    });
+    document.getElementById('closePanel').addEventListener('click', () => panel.classList.remove('open'));
+
+    const terrainTileCache = new Map();
+    const terrainManifestPromise = fetch('../terrain/manifest.json')
+      .then(response => response.ok ? response.json() : null)
+      .catch(() => null);
+
+    function tileIsCached(manifest, level, x, y) {
+      if (!manifest || !manifest.tiles || !manifest.tiles[level]) return false;
+      return manifest.tiles[level].some(tile => tile[0] === x && tile[1] === y);
+    }
+
+    async function loadTerrariumTile(z, x, y) {
+      const key = `${z}/${x}/${y}`;
+      if (terrainTileCache.has(key)) return terrainTileCache.get(key);
+      const promise = (async () => {
+        let response = await fetch(`../terrain/${key}.png`);
+        if (!response.ok) {
+          response = await fetch(`https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${key}.png`);
+        }
+        if (!response.ok) throw new Error(`Terrain tile ${key} returned ${response.status}`);
+        const bitmap = await createImageBitmap(await response.blob());
+        const canvas = document.createElement('canvas');
+        canvas.width = bitmap.width;
+        canvas.height = bitmap.height;
+        const context = canvas.getContext('2d', { willReadFrequently:true });
+        context.drawImage(bitmap, 0, 0);
+        bitmap.close();
+        return { width:canvas.width, height:canvas.height, pixels:context.getImageData(0, 0, canvas.width, canvas.height).data };
+      })();
+      terrainTileCache.set(key, promise);
+      if (terrainTileCache.size > 160) terrainTileCache.delete(terrainTileCache.keys().next().value);
+      return promise;
+    }
+
+    function terrariumHeight(tile, px, py) {
+      const x = Math.max(0, Math.min(tile.width - 1, Math.round(px)));
+      const y = Math.max(0, Math.min(tile.height - 1, Math.round(py)));
+      const offset = (y * tile.width + x) * 4;
+      return tile.pixels[offset] * 256 + tile.pixels[offset + 1] + tile.pixels[offset + 2] / 256 - 32768;
+    }
+
+    const terrainProvider = new Cesium.CustomHeightmapTerrainProvider({
+      width:65,
+      height:65,
+      tilingScheme:new Cesium.WebMercatorTilingScheme(),
+      credit:'Elevation: Mapzen Terrain Tiles / AWS Open Data',
+      callback:async (x, y, level) => {
+        const manifest = await terrainManifestPromise;
+        let sourceLevel = Math.min(level, manifest?.maxZoom ?? 15);
+        let scale = 2 ** (level - sourceLevel);
+        let sourceX = Math.floor(x / scale);
+        let sourceY = Math.floor(y / scale);
+        while (manifest && sourceLevel > 0 && !tileIsCached(manifest, sourceLevel, sourceX, sourceY)) {
+          sourceLevel -= 1;
+          scale = 2 ** (level - sourceLevel);
+          sourceX = Math.floor(x / scale);
+          sourceY = Math.floor(y / scale);
+        }
+        const sectionX = x - sourceX * scale;
+        const sectionY = y - sourceY * scale;
+        const tile = await loadTerrariumTile(sourceLevel, sourceX, sourceY);
+        const heights = new Float32Array(65 * 65);
+        for (let row = 0; row < 65; row++) {
+          for (let column = 0; column < 65; column++) {
+            const u = (sectionX + column / 64) / scale;
+            const v = (sectionY + row / 64) / scale;
+            heights[row * 65 + column] = terrariumHeight(tile, u * (tile.width - 1), v * (tile.height - 1));
+          }
+        }
+        return heights;
+      }
+    });
+
+    terrainProvider.errorEvent.addEventListener((error) => {
+      console.error(error);
+      statusElement.textContent = 'Terrain connection error · retrying';
+      statusElement.classList.add('error');
+    });
+    viewer.terrainProvider = terrainProvider;
+    statusElement.textContent = 'Presentation terrain ready';
+    statusElement.classList.add('ready');
+  </script>
+</body>
+</html>

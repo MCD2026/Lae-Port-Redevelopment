@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Lae Port Redevelopment PhotoMap with 2D and 3D project views.">
+  <meta property="og:title" content="Lae Port Redevelopment PhotoMap">
+  <meta property="og:description" content="352 location-tagged photos · 2D map and 3D tour">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://mcd2026.github.io/Lae-Port-Redevelopment/">
+  <meta property="og:image" content="https://mcd2026.github.io/Lae-Port-Redevelopment/social-preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Lae Port Redevelopment PhotoMap">
+  <meta name="twitter:description" content="352 location-tagged photos · 2D map and 3D tour">
+  <meta name="twitter:image" content="https://mcd2026.github.io/Lae-Port-Redevelopment/social-preview.png">
+  <title>Lae Port Redevelopment PhotoMap</title>
+  <style>
+    :root {
+      --green:#0b6b3a;
+      --green-dark:#07572f;
+      --lime:#bed731;
+      --ink:#1d2926;
+      --muted:#64716c;
+      --paper:#fff;
+      --line:#dce4df;
+    }
+    * { box-sizing:border-box; }
+    html, body { width:100%; height:100%; margin:0; overflow:hidden; }
+    body { background:#d9e1de; color:var(--ink); font-family:Arial,Helvetica,sans-serif; }
+    .shell { display:grid; grid-template-rows:auto 1fr; width:100%; height:100%; }
+    .topbar {
+      position:relative;
+      z-index:5;
+      display:flex;
+      align-items:center;
+      gap:18px;
+      min-height:86px;
+      padding:12px clamp(14px,3vw,38px);
+      background:var(--paper);
+      border-bottom:5px solid var(--lime);
+      box-shadow:0 3px 16px rgba(15,40,30,.16);
+    }
+    .logo { display:block; width:148px; height:auto; flex:none; }
+    .title { min-width:185px; flex:1; }
+    h1 { margin:0 0 3px; font-size:clamp(1.05rem,2vw,1.45rem); line-height:1.15; letter-spacing:-.02em; }
+    .subtitle { color:var(--muted); font-size:.78rem; }
+    .view-switch {
+      display:flex;
+      gap:4px;
+      padding:4px;
+      border:1px solid var(--line);
+      border-radius:9px;
+      background:#edf2ef;
+    }
+    .view-button {
+      min-width:112px;
+      border:0;
+      border-radius:6px;
+      padding:10px 14px;
+      color:#33413c;
+      background:transparent;
+      cursor:pointer;
+      font:700 .86rem/1 Arial,Helvetica,sans-serif;
+      transition:background .16s ease,color .16s ease,box-shadow .16s ease;
+    }
+    .view-button:hover { background:#dfe8e3; }
+    .view-button[aria-selected="true"] {
+      color:#fff;
+      background:var(--green);
+      box-shadow:0 2px 8px rgba(11,107,58,.24);
+    }
+    .view-button[aria-selected="true"]:hover { background:var(--green-dark); }
+    .content { position:relative; min-height:0; background:#d9e1de; }
+    #projectFrame { display:block; width:100%; height:100%; border:0; background:#d9e1de; }
+    .loading {
+      position:absolute;
+      inset:0;
+      z-index:2;
+      display:grid;
+      place-items:center;
+      color:#43524c;
+      background:#e9efec;
+      font-size:.86rem;
+      transition:opacity .2s ease;
+      pointer-events:none;
+    }
+    .loading.hidden { opacity:0; }
+    .loading span::before {
+      content:"";
+      display:inline-block;
+      width:10px;
+      height:10px;
+      margin-right:9px;
+      border:3px solid #a6b4ad;
+      border-top-color:var(--green);
+      border-radius:50%;
+      animation:spin .8s linear infinite;
+      vertical-align:-2px;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    @media (max-width:700px) {
+      .topbar { min-height:76px; gap:10px; padding:9px 10px; }
+      .logo { width:96px; }
+      .title { min-width:0; }
+      h1 { font-size:.94rem; }
+      .subtitle { display:none; }
+      .view-switch { gap:2px; padding:3px; }
+      .view-button { min-width:auto; padding:9px 10px; font-size:.74rem; }
+    }
+    @media (max-width:430px) {
+      .logo { width:80px; }
+      h1 { font-size:.82rem; }
+      .view-button { padding:8px; }
+    }
+    @media (prefers-reduced-motion:reduce) {
+      .view-button, .loading { transition:none; }
+      .loading span::before { animation:none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <img class="logo" src="mcd-logo.png" alt="McConnell Dowell">
+      <div class="title">
+        <h1>Lae Port Redevelopment PhotoMap</h1>
+        <div class="subtitle">352 location-tagged photos · 2D map and 3D tour</div>
+      </div>
+      <nav class="view-switch" aria-label="Choose map view" role="tablist">
+        <button class="view-button" type="button" role="tab" data-view="2d" aria-selected="true">● 2D Map</button>
+        <button class="view-button" type="button" role="tab" data-view="3d" aria-selected="false">▶ 3D Tour</button>
+      </nav>
+    </header>
+    <main class="content">
+      <div id="loading" class="loading" aria-live="polite"><span>Loading 2D map…</span></div>
+      <iframe id="projectFrame" title="PhotoMap 2D map" src="map/index.html" allow="fullscreen" allowfullscreen></iframe>
+    </main>
+  </div>
+  <script>
+    const views = {
+      '2d': { src:'map/index.html', title:'PhotoMap 2D map', loading:'Loading 2D map…' },
+      '3d': { src:'3d/index.html', title:'PhotoMap 3D tour', loading:'Loading 3D tour…' }
+    };
+    const frame = document.getElementById('projectFrame');
+    const loading = document.getElementById('loading');
+    const loadingText = loading.querySelector('span');
+    const buttons = Array.from(document.querySelectorAll('[data-view]'));
+    let activeView = '2d';
+
+    function selectView(view, updateAddress = true) {
+      if (!views[view]) view = '2d';
+      const changed = activeView !== view || frame.getAttribute('src') !== views[view].src;
+      activeView = view;
+      buttons.forEach(button => {
+        const selected = button.dataset.view === view;
+        button.setAttribute('aria-selected', String(selected));
+        button.tabIndex = selected ? 0 : -1;
+      });
+      if (changed) {
+        loadingText.textContent = views[view].loading;
+        loading.classList.remove('hidden');
+        frame.title = views[view].title;
+        frame.src = views[view].src;
+      }
+      if (updateAddress) {
+        const address = new URL(window.location.href);
+        address.searchParams.set('view', view);
+        history.replaceState({view}, '', address);
+      }
+    }
+
+    frame.addEventListener('load', () => loading.classList.add('hidden'));
+    buttons.forEach((button, index) => {
+      button.addEventListener('click', () => selectView(button.dataset.view));
+      button.addEventListener('keydown', event => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        const nextIndex = event.key === 'ArrowRight'
+          ? (index + 1) % buttons.length
+          : (index - 1 + buttons.length) % buttons.length;
+        buttons[nextIndex].focus();
+        selectView(buttons[nextIndex].dataset.view);
+      });
+    });
+
+    const requestedView = new URLSearchParams(window.location.search).get('view');
+    selectView(requestedView === '3d' ? '3d' : '2d', false);
+  </script>
+</body>
+</html>
