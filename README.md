@@ -9,3 +9,5 @@ Routine photo updates can be uploaded to `incoming-photos`; GitHub Actions rebui
 The stakeholder page is deployed from `github-pages` by the GitHub Pages workflow.
 
 Team instructions: [build, publish and update a PhotoMap](TEAM_PHOTOMAP_TUTORIAL.md).
+
+Plain-language Word guide: [from a photo ZIP file to a shareable PhotoMap](PhotoMap_From_Photo_ZIP_to_GitHub_Website.docx).
