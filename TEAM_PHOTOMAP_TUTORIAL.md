@@ -12,6 +12,15 @@ The current example is:
 - Repository: <https://github.com/MCD2026/Lae-Port-Redevelopment>
 - Stakeholder page: <https://mcd2026.github.io/Lae-Port-Redevelopment/>
 
+### Standard PhotoMap naming
+
+Confirm the tender number with the project owner before building a new PhotoMap. Use this presentation format on every project:
+
+- **Title:** `PhotoMap`
+- **Subtitle:** `TENDER-NUMBER | Project Name`
+
+Do not place the number of location-tagged photographs in the title or subtitle. The subtitle should be only 2 px smaller than the title.
+
 ## 1. Choose the correct workflow
 
 | Situation | Recommended method |

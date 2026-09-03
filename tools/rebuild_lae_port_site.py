@@ -272,13 +272,6 @@ def optimise(source: Path, destination: Path, max_size: int, quality: int) -> No
         image.save(destination, "JPEG", quality=quality, optimize=True, progressive=True)
 
 
-def update_count(path: Path, count: int) -> None:
-    text = path.read_text(encoding="utf-8")
-    text = re.sub(r"\d+ location-tagged photos", f"{count} location-tagged photos", text)
-    text = re.sub(r"\d+ photos · Location-guided tour", f"{count} photos · Location-guided tour", text)
-    path.write_text(text, encoding="utf-8")
-
-
 def write_dataset(site: Path, features: list[dict]) -> None:
     collection = {"type": "FeatureCollection", "name": "Lae Port Redevelopment Photos", "features": features}
     text = SITE_PREFIX + json.dumps(collection, separators=(",", ":")) + ";\n"
@@ -360,7 +353,7 @@ def referenced_number(feature: dict) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Rebuild or append to the Lae Port Redevelopment PhotoMap.")
+    parser = argparse.ArgumentParser(description="Rebuild or append to PhotoMap for NZP-TND-8288 | Lae Port Redevelopment.")
     parser.add_argument("source", type=Path, help="Folder containing original geotagged photos or a QGIS web export")
     parser.add_argument("site", type=Path, help="github-pages directory")
     parser.add_argument("--replace", action="store_true", help="Replace all existing photos instead of appending new ones")
@@ -417,8 +410,6 @@ def main() -> None:
     if not features:
         raise ValueError("The rebuilt site would contain no photos.")
     write_dataset(site, features)
-    update_count(site / "index.html", len(features))
-    update_count(site / "3d" / "index.html", len(features))
     missing = [feature["properties"]["photo"] for feature in features if not (site / "map" / feature["properties"]["photo"]).is_file()]
     if missing:
         raise FileNotFoundError(f"Generated dataset references {len(missing)} missing image(s): {missing[:5]}")

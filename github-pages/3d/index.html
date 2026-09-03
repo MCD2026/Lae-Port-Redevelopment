@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="3D tour for the Lae Port Redevelopment PhotoMap.">
-  <title>Lae Port Redevelopment PhotoMap | 3D</title>
+  <meta name="description" content="3D PhotoMap tour for NZP-TND-8288 | Lae Port Redevelopment.">
+  <title>PhotoMap | NZP-TND-8288 | Lae Port Redevelopment | 3D</title>
   <link rel="preconnect" href="https://cesium.com" crossorigin>
   <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
   <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.134/Build/Cesium/Widgets/widgets.css">
@@ -16,9 +16,9 @@
     #cesiumContainer { position:fixed; inset:0; }
     .topbar { position:fixed; top:14px; left:14px; right:60px; z-index:10; display:flex; align-items:center; gap:12px; max-width:850px; padding:10px 12px; color:var(--ink); background:var(--paper); border-left:5px solid var(--lime); border-radius:8px; box-shadow:0 5px 20px rgba(0,0,0,.28); }
     .logo { width:132px; height:auto; display:block; }
-    .title { min-width:150px; flex:1; }
-    h1 { margin:0 0 2px; font-size:1rem; line-height:1.15; }
-    .subtitle { color:#66736e; font-size:.76rem; }
+    .title { --title-size:1rem; min-width:150px; flex:1; }
+    h1 { margin:0 0 2px; font-size:var(--title-size); line-height:1.15; }
+    .subtitle { color:#66736e; font-size:calc(var(--title-size) - 2px); line-height:1.15; }
     .controls { display:flex; align-items:center; gap:7px; }
     button { border:0; border-radius:5px; cursor:pointer; font-weight:700; padding:8px 10px; }
     .primary { background:var(--green); color:#fff; }
@@ -58,12 +58,12 @@
   </style>
 </head>
 <body>
-  <div id="cesiumContainer" aria-label="Lae Port Redevelopment PhotoMap 3D tour"></div>
+  <div id="cesiumContainer" aria-label="3D PhotoMap tour for NZP-TND-8288, Lae Port Redevelopment"></div>
   <header class="topbar">
     <img class="logo" src="../mcd-logo.png" alt="McConnell Dowell">
     <div class="title">
-      <h1>Lae Port Redevelopment PhotoMap</h1>
-      <div class="subtitle">352 photos · Location-guided tour</div>
+      <h1>PhotoMap</h1>
+      <div class="subtitle">NZP-TND-8288 | Lae Port Redevelopment</div>
     </div>
     <div class="controls">
       <a class="map-link" href="../?view=2d" target="_top">2D map ↗</a>

@@ -1,6 +1,8 @@
-# Lae Port Redevelopment PhotoMap
+# PhotoMap
 
-Combined Leaflet 2D photo map and Cesium 3D presentation tour for the Lae Port Redevelopment project.
+**NZP-TND-8288 | Lae Port Redevelopment**
+
+Combined Leaflet 2D photo map and Cesium 3D presentation tour.
 
 Stakeholder page: <https://mcd2026.github.io/Lae-Port-Redevelopment/>
 
